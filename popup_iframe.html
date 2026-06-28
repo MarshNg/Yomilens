@@ -1,0 +1,568 @@
+<!doctype html>
+<meta charset="utf-8">
+
+<style>
+:root{
+  --term-size: 40px;   /* cỡ chữ term */
+  --text-size: 16px;   /* cỡ chữ nghĩa/reading */
+  --pill-bg: #fff;     /* nền pill tên từ điển */
+  --pill-br: #e0c8a7;  /* viền pill */
+  --pill-fg: #7a5e3a;  /* chữ trên pill */
+  --reading-bg: #f0e6d6; /* nền pill (đổi tùy thích) */
+  --reading-fg: #5a4630; /* chữ trong pill */
+  --def-gap: 8px;   
+  --thumb: rgba(0,0,0,.28);       /* màu tay nắm scrollbar */
+  --thumb-hover: rgba(0,0,0,.38); /* hover */
+  --accent: #e0c8a7;
+}
+html,body{
+  height: 100%;
+  margin:0;
+  background:transparent;
+  font: var(--text-size) system-ui, sans-serif;
+  line-height:1.4;
+}
+
+/* vùng cuộn gói nội dung */
+.wrap{
+  padding:0 14px 12px;
+  max-width:620px;
+  max-height:80vh;        /* giới hạn chiều cao để cuộn trong popup */
+  background:#fff8ee;
+  border-radius:18px;  
+  overflow:auto;
+  scrollbar-width: thin;                  /* Firefox */
+  scrollbar-color: var(--thumb) transparent;
+}
+
+
+/* Scrollbar mảnh, bo tròn (Chromium/WebKit - QtWebEngine) */
+.wrap::-webkit-scrollbar{ width:8px; height:8px; }
+.wrap::-webkit-scrollbar-track{ background:transparent; }
+.wrap::-webkit-scrollbar-thumb{
+  background: var(--thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;          /* tạo khoảng cách để tròn hơn */
+  background-clip: padding-box;
+}
+.wrap::-webkit-scrollbar-thumb:hover{ background: var(--thumb-hover); }
+
+.term{
+  margin:10px 0 14px;
+  border-left:3px solid #e0c8a7;
+  padding-left:10px;
+}
+.t{ font-weight:700; font-size:var(--term-size); margin-bottom:6px }
+.t.en-term{ font-size:32px; line-height:1.18 }
+
+/* Tên từ điển dạng box (pill) */
+.src{
+  display:inline-block;
+  margin:6px 0 6px;
+  padding:2px 10px;
+  background: var(--pill-bg);
+  border:1px solid var(--pill-br);
+  color: var(--pill-fg);
+  border-radius: 999px;           /* đầu tròn */
+  font-size:12px;
+  letter-spacing:.2px;
+  box-shadow: 0 1px 0 rgba(0,0,0,.04);
+}
+
+/* Dòng định nghĩa */
+.def{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;                /* khoảng cách giữa reading và nghĩa */
+  margin:4px 0 4px 2px;
+}
+
+/* Reading pill: nền màu, không viền, bo tròn */
+.def .r{
+  display:inline-block;
+  padding:2px 10px;
+  background:var(--reading-bg);
+  color:var(--reading-fg);
+  border-radius:8px;
+  font-size:var(--text-size);
+  line-height:1.2;
+  /* bỏ min-width cũ để pill ôm chữ */
+  min-width:0;
+  opacity:1;             /* reading rõ ràng hơn trước */
+  position:relative;
+  max-width: 25%;
+}
+
+/* Nghĩa chiếm phần còn lại, tự xuống dòng đẹp */
+.def .g{
+  flex:1;
+  font-size:var(--text-size);
+  margin-left: calc(var(--def-gap) / 2);   /* fallback nếu 'gap' không ăn */
+  word-break:break-word;
+}
+.entry-head{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin:0 0 4px;
+}
+.entry-num{
+  color:#7b7b7b;
+  font-weight:700;
+  min-width:20px;
+  text-align:right;
+}
+.entry-num-hidden{display:none}
+.entry-tag{
+  display:inline-block;
+  background:#8fc8d7;
+  color:#1f2f2f;
+  border-radius:5px;
+  padding:1px 7px;
+  font-weight:700;
+  font-size:12px;
+  line-height:1.45;
+}
+.gloss-tags{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 3px}
+.pos-tag{
+  display:inline-block;
+  background:#5d5d5d;
+  color:#fff;
+  border-radius:4px;
+  padding:1px 6px;
+  font-weight:700;
+  font-size:12px;
+  line-height:1.35;
+}
+.sense-line{display:flex;gap:6px;align-items:flex-start;margin:1px 0}
+.sense-num{flex:0 0 auto;font-weight:700}
+.sense-cont{padding-left:24px;margin:0}
+.gloss-note,.gloss-xref,.gloss-example{
+  margin:2px 0 2px 18px;
+  padding:4px 7px;
+  border-radius:7px;
+  background:#f3ead7;
+}
+.gloss-note{border-left:3px solid #d49a1f}
+.gloss-xref{border-left:3px solid #2f7de1}
+.gloss-label{display:block;color:#777;font-style:italic;font-size:12px;margin-bottom:2px}
+.gloss-example{border-left:3px solid #3f3f35;background:#eee4cf}
+.gloss-example + .gloss-example{margin-top:-1px}
+.ja-example{font-size:17px;line-height:1.25}
+.en-example{font-size:13px;color:#333;margin-top:-2px}
+.structured-gloss{font-size:15px;line-height:1.35}
+.structured-gloss .yomi-meanings{font-size:16px;margin:1px 0 3px}
+.structured-gloss .yomi-notes-ar{
+  display:block;
+  font-size:18px;
+  margin:2px 0;
+  color:#1f1f1f;
+  text-align:left;
+  direction:rtl;
+  unicode-bidi:isolate;
+}
+.structured-gloss .yomi-meta{color:#8a8a8a;font-size:12px;margin:2px 0 5px}
+.structured-gloss .yomi-category,.structured-gloss .yomi-usage{color:#8a8a8a}
+.structured-gloss table{
+  border-collapse:collapse;
+  margin:4px 0 5px;
+  width:auto;
+  max-width:100%;
+  table-layout:auto;
+  font-size:14px;
+}
+.structured-gloss td,.structured-gloss th{
+  border:1px solid #9b9588;
+  padding:3px 6px;
+  vertical-align:middle;
+}
+.structured-gloss .yomi-img{
+  display:block;
+  max-width:100%;
+  height:auto;
+}
+.structured-gloss .yomi-form-label,
+.structured-gloss .yomi-pronoun{color:#777;font-weight:600}
+.structured-gloss .yomi-form-arabic,
+.structured-gloss .yomi-conjugation{font-size:18px;text-align:right;white-space:nowrap}
+.structured-gloss details{margin:2px 0;color:#5f5f5f}
+.structured-gloss summary{cursor:pointer;font-weight:700}
+.structured-gloss .yomi-examples ul{margin:4px 0 2px 16px;padding:0}
+.structured-gloss .yomi-examples li{margin:2px 0}
+.structured-gloss .yomi-example-ar{font-size:17px}
+.structured-gloss .yomi-example-sep{color:#aaa;margin:0 4px}
+.structured-gloss .yomi-source a{color:#79b8bd;text-decoration:underline;font-weight:600}
+.empty{ opacity:.7 }
+.setup-empty{
+  margin:18px 0 8px;
+  padding:14px 16px;
+  border:1px solid #e0c8a7;
+  border-radius:12px;
+  background:#fff4e3;
+  color:#5a4630;
+}
+.setup-empty b{display:block;margin-bottom:6px;color:#3f2f1e}
+.setup-empty code{
+  background:#f4ead7;
+  border-radius:5px;
+  padding:1px 5px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:12px;
+}
+.setup-empty .hint{margin-top:7px;font-size:13px;color:#7a5e3a}
+
+/* --- Fancy Tabs (flush with popup border) --- */
+.tabs {
+  display:flex;
+  align-items:center;   /* căn giữa theo trục dọc */
+  justify-content:flex-start;
+  border-bottom:1px solid #e5decf;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding:0 6px;
+  background:#fff8ee;
+  box-shadow:0 1px 0 #e5decf;
+}
+
+.tab{
+  padding:4px 12px;
+  min-width:34px;
+  text-align:center;
+  cursor:pointer;
+  border:1px solid #e5decf;
+  border-bottom:none;
+  /*border-radius:0 8px 0 0;*/
+  margin-bottom:-1px; /* flush with border */
+  background:#f4ead7;
+  color:#5a4630;
+  user-select:none;
+  transition:background .15s ease, color .15s ease;
+  font-weight:500;   /* thêm dòng này cho đậm chữ */
+}
+.tab svg{
+  width:20px;
+  height:20px;
+}
+/* Fix nối liền tab đầu tiên với border popup */
+.tab:first-child {
+  border-left: none;
+  margin-left: -1px;
+  border-right: none;
+}
+.tab.active{
+  background:#fff8ee;
+  color:#3f2f1e;
+}
+.panel{ display:none; padding-top:8px }
+.panel.active{ display:block }
+
+.hzgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+.hzcell{border:1px solid #e0c8a7;border-radius:12px;padding:8px;background:#fff8ee}
+
+.kanji-list{display:grid;gap:10px}
+.kanji-card{border-left:3px solid #e0c8a7;padding:8px 10px;background:#fff8ee}
+.kanji-head{display:flex;gap:12px;align-items:flex-start}
+.kanji-char{font-size:42px;font-weight:700;line-height:1}
+.kanji-main{flex:1;min-width:0}
+.kanji-meaning{font-size:17px;font-weight:600;margin-bottom:4px}
+.kanji-row{font-size:13px;color:#5a4630;margin:2px 0}
+.kanji-label{font-weight:600;color:#7a5e3a}
+.kanji-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.kanji-pill{font-size:11px;background:#f0e6d6;color:#5a4630;border-radius:999px;padding:2px 7px}
+.kanji-src{font-size:11px;color:#8a6a43;margin-top:5px}
+
+
+/* --- Back/Forward buttons on the right of tabs --- */
+/* cụm nút back/fwd */
+.tab-actions {
+  margin-left:auto;      /* đẩy sang phải */
+  display:flex;
+  gap:8px;
+  align-items:center;    /* giữ chung baseline */
+  padding:0 8px;
+}
+
+
+/* nút điều hướng */
+.navbtn{
+  border:none; background:transparent; cursor:pointer;
+  width:22px; height:22px; border-radius:6px;
+  font:16px/22px system-ui; color:#5a4630;
+  opacity:.9;
+}
+.navbtn:hover{ background:#f1e8d8; }
+.navbtn:disabled{ opacity:.35; cursor:default; background:transparent; }
+
+/* Clickable characters inside .term .t */
+.t a.term-ch{
+  color: inherit;       /* giữ nguyên màu cũ */
+  text-decoration: none;
+  font-weight: inherit; /* không đậm thêm */
+  border-radius: 0;     /* không bo góc */
+  padding: 0;           /* không thêm khoảng trống */
+}
+.t a.term-ch:hover{
+  background:#f4ead7;
+  color:#7a5e3a;
+  border-radius:6px;
+}
+
+
+</style>
+
+<div class="wrap">
+  <!-- Nếu muốn show từ đang tra: <div class="query">Tra: {{QUERY}}</div> -->
+  
+<div id="yomi-tabs" class="tabs" style="display:none">
+  <div class="tab active" data-tab="result" title="Search">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" 
+         viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+         class="lucide lucide-search">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+  
+    <div class="tab" id="tab-kanji" data-tab="kanji" title="Kanji" style="display:none">
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+       viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+       class="lucide lucide-book-open-text">
+    <path d="M12 7v14"/>
+    <path d="M16 12h2"/>
+    <path d="M16 8h2"/>
+    <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>
+  </svg>
+</div>
+
+  <div class="tab" data-tab="strokes" title="Write">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+         viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+         class="lucide lucide-pen-line">
+      <path d="M12 20h9"/>
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+    </svg>
+  </div>
+
+  <div class="tab-actions">
+    <button id="yomi-back" class="navbtn" title="Back" type="button">←</button>
+    <button id="yomi-fwd" class="navbtn" title="Forward" type="button">→</button>
+    <button id="yomi-add" class="navbtn" title="Add to DB" type="button">+</button>
+    <button id="yomi-close" class="navbtn" title="Close (Esc)" type="button">×</button>
+  </div>
+
+</div>
+
+
+  <div class="panel active" id="panel-result">
+    {{ROWS}}
+  </div>
+  <div class="panel" id="panel-strokes">
+    <div id="hz-grid" class="hzgrid"></div>
+  </div>
+  <div class="panel" id="panel-kanji">
+    <div id="kanji-body" class="kanji-list"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var enabled = "{{HW_ENABLED}}" === "1";
+  var kanjiEnabled = "{{KANJI_ENABLED}}" === "1";
+  var tabs = document.getElementById('yomi-tabs');
+  var tabKanji = document.getElementById('tab-kanji');
+  if(kanjiEnabled && tabKanji){ tabKanji.style.display = ""; }
+  if((enabled || kanjiEnabled) && tabs){ tabs.style.display = ""; }
+  function activate(name){
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.dataset.tab===name); });
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.toggle('active', p.id==='panel-'+name); });
+    if(name==='strokes'){ renderStrokes(); }
+    if(name==='kanji'){ renderKanji(); }
+  }
+  tabs && tabs.addEventListener('click', function(e){
+    var t = e.target.closest('.tab'); if(!t) return; activate(t.dataset.tab);
+  });
+  var rendered = false;
+  function renderStrokes(){
+    if(rendered) return; rendered = true;
+    var termEl = document.querySelector('.term .t');
+    var term = termEl ? termEl.textContent.trim() : "{{QUERY}}";
+    var chars = Array.from(term).filter(function(c){ return /[\u3400-\u9fff]/.test(c); }); // CJK range wide
+    if(chars.length === 0) return;
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js';
+    s.onload = function(){
+      var grid = document.getElementById('hz-grid');
+      chars.forEach(function(ch, idx){
+        var cell = document.createElement('div'); cell.className='hzcell';
+        var div = document.createElement('div'); var id = 'hz-'+idx; div.id = id;
+        cell.appendChild(div); grid.appendChild(cell);
+        var w = HanziWriter.create(id, ch, {width:120, height:120, padding:5, showOutline:false, strokeAnimationSpeed:0.8, delayBetweenStrokes:0.2});
+        w.loopCharacterAnimation();
+      });
+    };
+    document.body.appendChild(s);
+  }
+
+  // === Back/Forward wiring to parent ===
+  var btnBack = document.getElementById('yomi-back');
+  var btnFwd  = document.getElementById('yomi-fwd');
+  var btnAdd  = document.getElementById('yomi-add');
+  var btnClose = document.getElementById('yomi-close');
+
+  if (btnBack) btnBack.addEventListener('click', function(){
+    try { parent.postMessage({type:'yomi-nav', dir:-1}, '*'); } catch(e){}
+  });
+  if (btnFwd) btnFwd.addEventListener('click', function(){
+    try { parent.postMessage({type:'yomi-nav', dir: 1}, '*'); } catch(e){}
+  });
+  if (btnAdd) btnAdd.addEventListener('click', function(){
+    var termEl = document.querySelector('.term .t');
+    var q = termEl ? termEl.textContent.trim() : "";
+    try { parent.postMessage({type:'yomi-add', q:q}, '*'); } catch(e){}
+  });
+  if (btnClose) btnClose.addEventListener('click', function(){
+    try { parent.postMessage({type:'yomi-close'}, '*'); } catch(e){}
+  });
+
+  // Hỏi trạng thái nav ngay khi load
+  try { parent.postMessage({type:'yomi-hello'}, '*'); } catch(e){}
+
+  // Nhận trạng thái từ parent để enable/disable nút
+  window.addEventListener('message', function(ev){
+    var d = ev.data || {};
+    if (d && d.type === 'yomi-navstate') {
+      if (btnBack) btnBack.disabled = !d.canBack;
+      if (btnFwd)  btnFwd.disabled  = !d.canFwd;
+    }
+  });
+
+})();  // end IIFE
+
+  var kanjiRendered = false;
+  function escHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
+  function renderKanjiCard(item){
+    var stats = item.stats || {};
+    var pills = [];
+    ['strokes','grade','jlpt','freq','skip'].forEach(function(k){
+      if(stats[k]) pills.push('<span class="kanji-pill">'+escHtml(k)+': '+escHtml(stats[k])+'</span>');
+    });
+    return '<div class="kanji-card">'+
+      '<div class="kanji-head">'+
+        '<div class="kanji-char">'+escHtml(item.character)+'</div>'+
+        '<div class="kanji-main">'+
+          '<div class="kanji-meaning">'+escHtml((item.meanings || []).join("; "))+'</div>'+
+          (item.onyomi ? '<div class="kanji-row"><span class="kanji-label">On:</span> '+escHtml(item.onyomi)+'</div>' : '')+
+          (item.kunyomi ? '<div class="kanji-row"><span class="kanji-label">Kun:</span> '+escHtml(item.kunyomi)+'</div>' : '')+
+          (item.tags ? '<div class="kanji-row"><span class="kanji-label">Tags:</span> '+escHtml(item.tags)+'</div>' : '')+
+          (pills.length ? '<div class="kanji-meta">'+pills.join('')+'</div>' : '')+
+          (item.source ? '<div class="kanji-src">'+escHtml(item.source)+'</div>' : '')+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }
+  async function renderKanji(){
+    if(kanjiRendered) return; kanjiRendered = true;
+    var termEl = document.querySelector('.term .t');
+    var term = termEl ? termEl.textContent.trim() : "{{QUERY}}";
+    if(!term) return;
+    try{
+      var j = await fetch('http://127.0.0.1:8777/api/kanji?q=' + encodeURIComponent(term)).then(r=>r.json());
+      if(!j || !j.ok) return;
+      var body = document.getElementById('kanji-body'); if(!body) return;
+      var items = j.items || [];
+      body.innerHTML = items.length ? items.map(renderKanjiCard).join('') : '<div class="empty">No kanji data.</div>';
+    }catch(e){}
+  }
+
+
+  // === Make term header characters clickable (like IDS components) ===
+  function linkifyTermHeader(){
+    try{
+      document.querySelectorAll('.term .t').forEach(function(node){
+        if(node.__linked) return;
+        node.__linked = true;
+        var raw = node.textContent || '';
+        if(!raw) return;
+        var out = [];
+        for (var i=0; i<raw.length; i++){
+          var ch = raw[i];
+          if(/[\u3400-\u9FFF]/.test(ch)){
+            out.push('<a href="#" class="term-ch" data-ch="'+ch+'">'+ch+'</a>');
+          } else {
+            out.push(ch);
+          }
+        }
+        node.innerHTML = out.join('');
+      });
+    }catch(e){}
+  }
+
+  // Delegate clicks on .term-ch to parent lookup
+  (function setupTermClickDelegation(){
+    var panel = document.getElementById('panel-result');
+    if(!panel) return;
+    function eventAnchor(ev){
+      return {
+        x: Math.round(ev.clientX || 0),
+        y: Math.round(ev.clientY || 0),
+        w: 1,
+        h: 1
+      };
+    }
+    function selectionAnchor(){
+      try{
+        var sel = window.getSelection && window.getSelection();
+        if(!sel || !sel.rangeCount) return null;
+        var r = sel.getRangeAt(0).getBoundingClientRect();
+        if(!r) return null;
+        return {
+          x: Math.round(r.left),
+          y: Math.round(r.top),
+          w: Math.round(r.width || 1),
+          h: Math.round(r.height || 1)
+        };
+      }catch(e){ return null; }
+    }
+    panel.addEventListener('click', function(ev){
+      var a = ev.target && ev.target.closest && ev.target.closest('a.term-ch');
+      if(!a) return;
+      ev.preventDefault();
+      var ch = a.getAttribute('data-ch') || a.textContent || '';
+      if(!ch) return;
+      try { parent.postMessage({type:'yomi-lookup', q: ch, anchor: eventAnchor(ev)}, '*'); } catch(e){}
+    }, false);
+
+    panel.addEventListener('mouseup', function(ev){
+      try{
+        if(ev.target && ev.target.closest && ev.target.closest('a,button,input,textarea,select')) return;
+        var sel = window.getSelection && window.getSelection();
+        var text = sel ? String(sel.toString() || '').trim() : '';
+        if(!text || text.length > 80) return;
+        parent.postMessage({type:'yomi-lookup', q: text, anchor: selectionAnchor() || eventAnchor(ev)}, '*');
+        if(sel && sel.removeAllRanges) sel.removeAllRanges();
+      }catch(e){}
+    }, false);
+  })();
+
+  // Run once on load and whenever we activate "result" tab
+  try{ linkifyTermHeader(); }catch(e){}
+  var tabsEl = document.getElementById('yomi-tabs');
+  if (tabsEl){
+    tabsEl.addEventListener('click', function(e){
+      var t = e.target.closest && e.target.closest('.tab');
+      if(t && t.dataset && t.dataset.tab==='result'){
+        setTimeout(linkifyTermHeader, 0);
+      }
+    });
+  }
+
+</script>
