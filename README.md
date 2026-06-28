@@ -91,8 +91,6 @@ The public AnkiWeb page is here:
 
 https://ankiweb.net/shared/info/1807906393
 
-For development, this repository contains the add-on source files. The folder can be packaged as an Anki add-on ZIP, excluding local files such as `.git`, `__pycache__`, `.DS_Store`, `yomi_index.db`, and `yomi_config.json`.
-
 ## Credits
 
 Special thanks to the Yomitan project and contributors for the dictionary format, language tooling, and inspiration:
