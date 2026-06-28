@@ -27,20 +27,12 @@ Select a word on an Anki review card and YomiLens opens a clean floating diction
 
 ## Screenshots
 
-### Arabic and rich dictionary entries
+### Multilingual support
 
-YomiLens can render structured Yomitan entries with labels, forms, tables, and right-to-left scripts.
+YomiLens supports lookup across many languages and scripts, including structured Yomitan entries with labels, forms, tables, and right-to-left text.
 
 <p align="center">
   <img src="assets/screenshots/arabic-popup.png" alt="Arabic popup dictionary lookup" width="720">
-</p>
-
-### Japanese deinflection
-
-Japanese lookup can resolve inflected forms and display dictionary metadata, senses, and examples.
-
-<p align="center">
-  <img src="assets/screenshots/japanese-deinflection.png" alt="Japanese deinflection lookup" width="720">
 </p>
 
 ### Structured table rendering
@@ -108,4 +100,3 @@ Special thanks to the Yomitan project and contributors for the dictionary format
 https://github.com/yomidevs/yomitan
 
 Dictionary data credits include EDRDG, Jitendex, CC-CEDICT, LingLook / Phong Phan, Open English WordNet, Free Vietnamese Dictionary Project, LisaanMasry, and other open dictionary contributors.
-
