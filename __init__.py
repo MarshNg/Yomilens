@@ -112,7 +112,7 @@ def _load_config():
         LANG_PROFILE = cfg.get('lang_profile', 'auto')
         HANZI_WRITER = bool(cfg.get('hanzi_writer', False))
         POPUP_TRIGGER_MOD = cfg.get('popup_trigger_mod', 'none')
-        if POPUP_TRIGGER_MOD not in ("none", "alt", "ctrl", "shift", "meta"):
+        if POPUP_TRIGGER_MOD not in ("none", "alt", "ctrl", "shift", "meta", "hover_shift"):
             POPUP_TRIGGER_MOD = "none"
         POPUP_SUBLOOKUP_MODE = cfg.get('popup_sublookup_mode', 'reuse')
         if POPUP_SUBLOOKUP_MODE not in ("reuse", "nested"):
@@ -2047,6 +2047,7 @@ class _YomiSettingsDialog(QDialog):
             ("Ctrl", "ctrl"),
             ("Shift", "shift"),
             ("Cmd", "meta"),
+            ("Hover + Shift", "hover_shift"),
         ]
         for label, value in trigger_options:
             trigger_combo.addItem(label, value)
