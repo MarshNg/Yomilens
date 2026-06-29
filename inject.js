@@ -94,7 +94,7 @@ document.head.appendChild(__focusCSS);
   const MODES = Array.isArray(window.__hanziLangs) && window.__hanziLangs.length
     ? window.__hanziLangs
     : [window.__hanziLang || 'zh'];
-  const POPUP_MOD = ['none', 'alt', 'ctrl', 'shift', 'meta', 'hover_shift'].includes(window.__yomiPopupModifier)
+  const POPUP_MOD = ['none', 'alt', 'ctrl', 'shift', 'meta'].includes(window.__yomiPopupModifier)
     ? window.__yomiPopupModifier
     : 'none';
   const SUBLOOKUP_MODE = window.__yomiSublookupMode === 'nested' ? 'nested' : 'reuse';
@@ -113,61 +113,6 @@ document.head.appendChild(__focusCSS);
     return /[\u3400-\u9fff\u{20000}-\u{2A6DF}]/u;
   });
   function hasLangChar(s){ return !!(s && CHAR_RE_LIST.some(function(re){ return re.test(s); })); }
-  function isLookupChar(ch){
-    return !!(ch && CHAR_RE_LIST.some(function(re){ return re.test(ch); }));
-  }
-  function caretRangeAtPoint(x, y){
-    try{
-      if (document.caretRangeFromPoint) {
-        return document.caretRangeFromPoint(x, y);
-      }
-      if (document.caretPositionFromPoint) {
-        const pos = document.caretPositionFromPoint(x, y);
-        if (!pos) return null;
-        const r = document.createRange();
-        r.setStart(pos.offsetNode, pos.offset);
-        r.collapse(true);
-        return r;
-      }
-    }catch(_){}
-    return null;
-  }
-  function textNodeFromRange(r){
-    if (!r) return null;
-    let node = r.startContainer;
-    if (!node) return null;
-    if (node.nodeType === Node.TEXT_NODE) return node;
-    if (node.childNodes && node.childNodes.length) {
-      const i = Math.max(0, Math.min(r.startOffset || 0, node.childNodes.length - 1));
-      node = node.childNodes[i];
-      if (node && node.nodeType === Node.TEXT_NODE) return node;
-    }
-    return null;
-  }
-  function lookupTextAtPoint(x, y){
-    const r = caretRangeAtPoint(x, y);
-    const node = textNodeFromRange(r);
-    if (!node || !root.contains(node)) return null;
-    const value = node.nodeValue || '';
-    if (!value) return null;
-    let pos = Math.max(0, Math.min(r.startOffset || 0, value.length));
-    if (!isLookupChar(value.charAt(pos)) && pos > 0 && isLookupChar(value.charAt(pos - 1))) {
-      pos -= 1;
-    }
-    if (!isLookupChar(value.charAt(pos))) return null;
-    let start = pos;
-    let end = pos + 1;
-    while (start > 0 && isLookupChar(value.charAt(start - 1))) start -= 1;
-    while (end < value.length && isLookupChar(value.charAt(end))) end += 1;
-    const text = value.slice(start, end).trim();
-    if (!text || text.length > 80 || !hasLangChar(text)) return null;
-    const rr = document.createRange();
-    rr.setStart(node, start);
-    rr.setEnd(node, end);
-    let rect = null;
-    try { rect = rr.getBoundingClientRect(); } catch(_){}
-    return {text, rect};
-  }
 
   // ----- selection helpers -----
   function getSel() {
@@ -689,7 +634,6 @@ function __styleNavBtn(btn){
     if (POPUP_MOD === 'ctrl') return !!(e && e.ctrlKey);
     if (POPUP_MOD === 'shift') return !!(e && e.shiftKey);
     if (POPUP_MOD === 'meta') return !!(e && e.metaKey);
-    if (POPUP_MOD === 'hover_shift') return false;
     return true;
   }
   function popupModifierKeyPressed(e){
@@ -698,7 +642,6 @@ function __styleNavBtn(btn){
     if (POPUP_MOD === 'ctrl') return e.key === 'Control';
     if (POPUP_MOD === 'shift') return e.key === 'Shift';
     if (POPUP_MOD === 'meta') return e.key === 'Meta';
-    if (POPUP_MOD === 'hover_shift') return e.key === 'Shift';
     return false;
   }
   function showSelectionAt(x, y, retry){
@@ -715,29 +658,6 @@ function __styleNavBtn(btn){
       y = Math.round(rect.top + Math.min(rect.height, 24));
     }
     showIframe(text, x || lastMouse.x || 40, y || lastMouse.y || 40);
-    return true;
-  }
-  function showHoverText(){
-    const s = getSel();
-    if (hasLangChar(s.text)) {
-      let x = lastMouse.x || window.__lastMouseX || 40;
-      let y = lastMouse.y || window.__lastMouseY || 40;
-      if (s.rect) {
-        x = Math.round(s.rect.left + s.rect.width / 2);
-        y = Math.round(s.rect.top + Math.min(s.rect.height, 24));
-      }
-      showIframe(s.text, x, y);
-      return true;
-    }
-    const hit = lookupTextAtPoint(lastMouse.x || window.__lastMouseX || 40, lastMouse.y || window.__lastMouseY || 40);
-    if (!hit) return false;
-    let x = lastMouse.x || window.__lastMouseX || 40;
-    let y = lastMouse.y || window.__lastMouseY || 40;
-    if (hit.rect) {
-      x = Math.round(hit.rect.left + hit.rect.width / 2);
-      y = Math.round(hit.rect.top + Math.min(hit.rect.height, 24));
-    }
-    showIframe(hit.text, x, y);
     return true;
   }
 
@@ -762,8 +682,7 @@ function __styleNavBtn(btn){
 
     // Modifier trigger: chọn text trước rồi bấm Opt/Ctrl/Shift/Cmd để mở.
     if (POPUP_MOD !== 'none' && popupModifierKeyPressed(e)) {
-      if (POPUP_MOD === 'hover_shift') showHoverText();
-      else showSelectionAt();
+      showSelectionAt();
       return;
     }
 
