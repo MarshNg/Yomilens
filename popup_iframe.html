@@ -52,8 +52,35 @@ html,body{
   border-left:3px solid #e0c8a7;
   padding-left:10px;
 }
-.t{ font-weight:700; font-size:var(--term-size); margin-bottom:6px }
+.term-title-row{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  margin-bottom:6px;
+}
+.t{ font-weight:700; font-size:var(--term-size); margin-bottom:0 }
 .t.en-term{ font-size:32px; line-height:1.18 }
+.term-actions{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding-top:7px;
+  flex-shrink:0;
+}
+.term-action{
+  appearance:none;
+  border:1px solid #e0c8a7;
+  background:#fff8ee;
+  color:#7a5e3a;
+  border-radius:999px;
+  padding:2px 7px;
+  font:700 11px system-ui, sans-serif;
+  line-height:1.2;
+  cursor:pointer;
+  box-shadow:0 1px 0 rgba(0,0,0,.04);
+}
+.term-action:hover{ background:#f0e6d6 }
+.term-action:active{ transform:translateY(1px) }
 
 /* Tên từ điển dạng box (pill) */
 .src{

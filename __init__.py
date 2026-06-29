@@ -157,6 +157,57 @@ def _guess_lang_from_sources():
         return "ja"
     return "zh"
 
+def _external_lookup_lang_from_source(source_title):
+    s = str(source_title or "").lower()
+    pairs = [
+        (("japanese", "jmdict", "jmnedict", "jitendex", "kanjidic", "日本", "和英", "国語"), ("japanese", "ja")),
+        (("chinese", "cc-cedict", "cedict", "cfdict", "cvdict", "中文", "汉", "漢"), ("chinese", "zh-CN")),
+        (("korean", "krdict", "한국", "korean-english"), ("korean", "ko")),
+        (("arabic", "lisaan", "العربية"), ("arabic", "ar")),
+        (("english", "wordnet", "en->en", "en-en"), ("english", "en")),
+        (("french", "français", "francais"), ("french", "fr")),
+        (("spanish", "español", "espanol"), ("spanish", "es")),
+        (("german", "deutsch"), ("german", "de")),
+        (("italian", "italiano"), ("italian", "it")),
+        (("portuguese", "português", "portugues"), ("portuguese", "pt")),
+        (("russian", "русский"), ("russian", "ru")),
+        (("vietnamese", "tiếng việt", "tieng viet", "en->vi", "en-vi"), ("vietnamese", "vi")),
+    ]
+    for needles, langs in pairs:
+        if any(n in s for n in needles):
+            return langs
+    return ("english", "en")
+
+def _external_lookup_url(kind, q, source_title=""):
+    term = str(q or "").strip()
+    if not term:
+        return ""
+    youglish_lang, google_hl = _external_lookup_lang_from_source(source_title)
+    if kind == "youglish":
+        return "https://youglish.com/pronounce/{}/{}".format(
+            urllib.parse.quote(term),
+            urllib.parse.quote(youglish_lang),
+        )
+    if kind == "images":
+        return "https://www.google.com/search?tbm=isch&hl={}&q={}".format(
+            urllib.parse.quote(google_hl),
+            urllib.parse.quote(term),
+        )
+    return ""
+
+def _open_external_lookup(kind, q, source_title=""):
+    url = _external_lookup_url(kind, q, source_title)
+    if not url:
+        return False
+    try:
+        mw.taskman.run_on_main(lambda: QDesktopServices.openUrl(QUrl(url)))
+    except Exception:
+        try:
+            QDesktopServices.openUrl(QUrl(url))
+        except Exception:
+            return False
+    return True
+
 def _lang_profile_from_popup_langs():
     # primary lang = first non-auto lang; "auto" if multiple or ambiguous
     langs = [x for x in POPUP_LANGS if x in DEINFLECT_LANG_CODES]
@@ -182,7 +233,10 @@ DEFAULT_TPL = (
     "body{margin:0;background:#fff8ee;font:var(--text-size) system-ui,sans-serif;line-height:1.4}"
     ".wrap{padding:12px 14px;max-width:620px}"
     ".term{margin:10px 0 14px;border-left:3px solid #e0c8a7;padding-left:10px}"
-    ".t{font-weight:700;font-size:var(--term-size);margin-bottom:6px}"
+    ".term-title-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}"
+    ".t{font-weight:700;font-size:var(--term-size);margin-bottom:0}"
+    ".term-actions{display:flex;align-items:center;gap:4px;padding-top:7px;flex-shrink:0}"
+    ".term-action{border:1px solid #e0c8a7;background:#fff8ee;color:#7a5e3a;border-radius:999px;padding:2px 7px;font:700 11px system-ui,sans-serif;line-height:1.2;cursor:pointer}"
     ".src{font-size:12px;opacity:.8;margin:4px 0 4px}"
     ".def{margin:3px 0;display:flex;align-items:flex-start}"
     ".def .r{flex-shrink:0;min-width:9em;opacity:.9;font-size:var(--text-size);padding-top:2px}"
@@ -1590,6 +1644,18 @@ class _Handler(http.server.BaseHTTPRequestHandler):
                 self._json({"ok": True, "items": db_kanji_for_text(q)})
                 return
 
+            if parsed.path == "/api/open-external":
+                try:
+                    qs = urllib.parse.parse_qs(parsed.query or "")
+                except Exception:
+                    qs = {}
+                kind = (qs.get("kind", [""])[0] or "").strip()
+                q = (qs.get("q", [""])[0] or "").strip()
+                src = (qs.get("src", [""])[0] or "").strip()
+                ok = _open_external_lookup(kind, q, src)
+                self._json({"ok": bool(ok)})
+                return
+
             # --- trang tra cứu như cũ ---
             if parsed.path not in ("/lookup", "/", "/q"):
                 body = b"<!doctype html><title>404</title>Not Found"
@@ -1692,7 +1758,23 @@ class _Handler(http.server.BaseHTTPRequestHandler):
                     per_src.setdefault(e["source"], []).append(e)
 
                 term_class = "t en-term" if re.search(r"[A-Za-z]", term or "") else "t"
-                term_html = [f"<div class='term'><div class='{term_class}'>{_esc(term)}</div>"]
+                first_src = next(iter(per_src.keys()), "")
+                yg_url = (
+                    f"http://127.0.0.1:{PORT}/api/open-external?kind=youglish"
+                    f"&q={urllib.parse.quote(term)}&src={urllib.parse.quote(str(first_src or ''))}"
+                )
+                img_url = (
+                    f"http://127.0.0.1:{PORT}/api/open-external?kind=images"
+                    f"&q={urllib.parse.quote(term)}&src={urllib.parse.quote(str(first_src or ''))}"
+                )
+                term_html = [
+                    "<div class='term'><div class='term-title-row'>"
+                    f"<div class='{term_class}'>{_esc(term)}</div>"
+                    "<div class='term-actions'>"
+                    f"<button type='button' class='term-action' title='Open in YouGlish' onclick=\"fetch('{_attr(yg_url)}');return false\">YG</button>"
+                    f"<button type='button' class='term-action' title='Search Google Images' onclick=\"fetch('{_attr(img_url)}');return false\">IMG</button>"
+                    "</div></div>"
+                ]
                 for src, items in per_src.items():
                     term_html.append(f"<div class='src'>{_esc(src)}</div>")
                     visible_items = items[:8]
