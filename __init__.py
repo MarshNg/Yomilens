@@ -1715,7 +1715,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
                         resource_base = f"http://127.0.0.1:{PORT}/api/resource?sid={int(e.get('source_id') or 0)}&path="
                         for g in e.get("glosses", []):
                             if g:
-                                for sub in g.split("\n"):
+                                g = g.strip()
+                                is_html_block = g.startswith("@@html") and "\t" in g
+                                gloss_lines = [g] if is_html_block else g.split("\n")
+                                for sub in gloss_lines:
                                     sub = sub.strip()
                                     if sub:
                                         if sub.startswith("@@"):
@@ -1727,6 +1730,9 @@ class _Handler(http.server.BaseHTTPRequestHandler):
                                                 lambda m: resource_base + m.group(1),
                                                 rendered,
                                             )
+                                        if is_html_block:
+                                            rendered = rendered.replace("\r\n", "\n").replace("\r", "\n")
+                                            rendered = rendered.replace("\n", "<br>\n")
                                         lines.append(rendered)
                         gloss = "".join(lines) if has_structured_lines else "<br>".join(lines)
                         term_html.append(
