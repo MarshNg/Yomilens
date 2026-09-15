@@ -254,7 +254,8 @@ def _render_gloss_line(line):
         parts = line.split("\t")
         kind = parts[0]
         if kind == "@@html" and len(parts) >= 2:
-            return f"<div class='structured-gloss'>{parts[1]}</div>"
+            payload = line.split("\t", 1)[1]
+            return f"<div class='structured-gloss'>{payload}</div>"
         if kind == "@@entrymeta":
             return ""
         if kind == "@@tags":
@@ -1715,7 +1716,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
                         resource_base = f"http://127.0.0.1:{PORT}/api/resource?sid={int(e.get('source_id') or 0)}&path="
                         for g in e.get("glosses", []):
                             if g:
-                                for sub in g.split("\n"):
+                                # Structured HTML is one document, even with embedded whitespace.
+                                g = g.strip()
+                                gloss_lines = [g] if g.startswith("@@html\t") else g.split("\n")
+                                for sub in gloss_lines:
                                     sub = sub.strip()
                                     if sub:
                                         if sub.startswith("@@"):
