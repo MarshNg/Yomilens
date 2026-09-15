@@ -1,3 +1,15 @@
+const guides = [
+  { id: "google-images", title: "Google Images", steps: ["Open Settings → Web Lookup. After installing dictionaries, click Refresh to load their sources.", "Enable Show IMG button. Choose the Google language for each dictionary source, then click Save Web Lookup Settings.", "Look up a word and click IMG to search for images. An internet connection is required."] },
+  { id: "youglish", title: "YouGlish", steps: ["In Settings → Web Lookup, enable Show YG button.", "Choose the YouGlish language for each dictionary and save. This setting is separate from the Google language.", "Click YG beside a lookup result to hear the word used in videos. Available examples depend on YouGlish and the selected language."] },
+  { id: "audio", title: "Audio", steps: ["In Settings → Web Lookup, enable Show audio button.", "Choose the Google language and Audio voice for each source. Enable Auto speak only if you want automatic playback, then save.", "Click the speaker beside a result to hear Google TTS. Playback requires internet access."] },
+  { id: "frequency", title: "Frequency dictionaries", steps: ["Use a build that supports frequency metadata. Download a Yomitan frequency ZIP, such as JPDB, separately from your meaning dictionary.", "Open Settings → Dictionaries and import the ZIP. Keep both the frequency source and your Japanese meaning dictionary enabled, then restart Anki.", "Look up a word. Matching frequency values appear beside the dictionary name. Coverage and ranking depend on the source; no badge can simply mean no matching entry."] },
+  { id: "pitch-accent", title: "Pitch accent", steps: ["Use a build that supports pitch metadata. Obtain a Yomitan pitch-accent ZIP, such as Kanjium; a normal JMdict or Jitendex ZIP is not a substitute.", "Import it in Settings → Dictionaries, enable the source and restart Anki.", "In General, choose Pitch accent style: Graph or Compact, then save. Matching pitch information appears above definitions for that reading."] },
+  { id: "custom-css", title: "Custom CSS", steps: ["In a build that includes Custom CSS, open Settings → General → Custom CSS.", "Use Insert Example to see YomiLens selectors, then edit the properties you need. It appends a sample without replacing existing CSS.", "Click Preview to inspect the sample, then Save CSS. Open a fresh popup to check real entries. Yomitan CSS is not directly compatible; this field accepts CSS, not JavaScript."] },
+  { id: "themes", title: "Themes", steps: ["Open Settings → General and choose a Popup theme.", "Save your General settings and open a new lookup to see the result.", "Choose a dark palette explicitly for a dark popup. Your chosen popup palette stays independent of Anki's light/dark appearance."] },
+  { id: "hook-shift", title: "Hook + Shift", steps: ["In Settings → General, enable Hook + Shift mode and the lookup languages you need, then save.", "During review, place your pointer over a word and hold Shift to look it up without selecting it.", "Position the pointer directly over the character you want. Card layout and dictionary coverage can affect matching."] },
+  { id: "nested-popups", title: "Nested popups", steps: ["Open Settings → General and select Open nested popup for lookup inside popups, then save.", "Open a lookup, then select a word in its definition to open a child popup.", "The parent stays available so you can return to the original entry. Choose reuse instead if you prefer a single popup."] },
+];
+
 const chapters = [
   ["start", "Quick start"],
   ["lookup", "Popup lookup"],
@@ -59,6 +71,11 @@ export default function Home() {
           </span>
         </a>
         <nav>
+          <details className="guide-menu" open>
+            <summary>Feature guides</summary>
+            <a href="#feature-guides">All feature guides</a>
+            {guides.map(({ id, title }) => <a key={id} href={`#${id}`}>{title}</a>)}
+          </details>
           {chapters.map(([id, label], index) => (
             <a key={id} href={`#${id}`}>
               <span>{String(index + 1).padStart(2, "0")}</span>
@@ -261,6 +278,22 @@ export default function Home() {
               />
             </figure>
           </div>
+        </section>
+
+        <section id="feature-guides" className="section feature-guides">
+          <h2>Feature Guides</h2>
+          <p>Pick a feature for its setup steps. Frequency, pitch accent and Custom CSS require a build that includes those features; they may not yet be available in your AnkiWeb release.</p>
+          <div className="guide-links">
+            {guides.map(({ id, title }) => <a key={id} href={`#${id}`}>{title}</a>)}
+          </div>
+          {guides.map(({ id, title, steps }) => (
+            <article className="feature-guide" id={id} key={id}>
+              <h3>{title}</h3>
+              <ol>{steps.map(step => <li key={step}>{step}</li>)}</ol>
+              {(id === "frequency" || id === "pitch-accent") && <p><a href="https://github.com/MarvNC/yomitan-dictionaries">Find Yomitan dictionary sources</a>. Check each source&apos;s license before downloading or redistributing.</p>}
+              {id === "custom-css" && <pre><code>{`/* Enlarge definition text */\n.reading-definitions .g {\n  font-size: 18px;\n  line-height: 1.6;\n}`}</code></pre>}
+            </article>
+          ))}
         </section>
 
         <section id="troubleshooting" className="section">
