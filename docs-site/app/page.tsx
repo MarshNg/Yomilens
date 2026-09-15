@@ -1,3 +1,5 @@
+import GuideMenu from "./guide-menu";
+
 const guides = [
   { id: "google-images", title: "Google Images", steps: ["Open Settings → Web Lookup. After installing dictionaries, click Refresh to load their sources.", "Enable Show IMG button. Choose the Google language for each dictionary source, then click Save Web Lookup Settings.", "Look up a word and click IMG to search for images. An internet connection is required."] },
   { id: "youglish", title: "YouGlish", steps: ["In Settings → Web Lookup, enable Show YG button.", "Choose the YouGlish language for each dictionary and save. This setting is separate from the Google language.", "Click YG beside a lookup result to hear the word used in videos. Available examples depend on YouGlish and the selected language."] },
@@ -62,7 +64,7 @@ const troubleshoot = [
 export default function Home() {
   return (
     <main>
-      <aside className="toc" aria-label="Table of contents">
+      <header className="toc" aria-label="Table of contents">
         <a className="brand" href="#top">
           <span className="brand-mark">読</span>
           <span>
@@ -70,20 +72,11 @@ export default function Home() {
             <small>Popup Dictionary Docs</small>
           </span>
         </a>
-        <nav>
-          <details className="guide-menu" open>
-            <summary>Feature guides</summary>
-            <a href="#feature-guides">All feature guides</a>
-            {guides.map(({ id, title }) => <a key={id} href={`#${id}`}>{title}</a>)}
-          </details>
-          {chapters.map(([id, label], index) => (
-            <a key={id} href={`#${id}`}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              {label}
-            </a>
-          ))}
+        <nav aria-label="Documentation">
+          <GuideMenu title="Documentation" items={chapters.map(([id, title]) => ({ id, title }))} />
+          <GuideMenu title="Feature guides" items={[{id: "feature-guides", title: "All feature guides"}, ...guides]} />
         </nav>
-      </aside>
+      </header>
 
       <div className="page" id="top">
         <header className="hero">
