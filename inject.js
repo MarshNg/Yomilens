@@ -21,6 +21,87 @@ __focusCSS.textContent = `
 `;
 document.head.appendChild(__focusCSS);
 
+const yomilensResizeStyle = document.createElement('style');
+
+yomilensResizeStyle.textContent = `
+    .yomilens-resize-handle {
+        position: absolute;
+        z-index: 100001;
+        background: transparent;
+        user-select: none;
+        touch-action: none;
+    }
+
+    /* Top and bottom resize handles */
+    .yomilens-resize-top,
+    .yomilens-resize-bottom {
+        left: 12px;
+        right: 12px;
+        height: 10px;
+        cursor: ns-resize;
+    }
+
+    .yomilens-resize-top {
+        top: 0;
+    }
+
+    .yomilens-resize-bottom {
+        bottom: 0;
+    }
+
+    /* Left and right resize handles */
+    .yomilens-resize-left,
+    .yomilens-resize-right {
+        top: 12px;
+        bottom: 12px;
+        width: 10px;
+        cursor: ew-resize;
+    }
+
+    .yomilens-resize-left {
+        left: 0;
+    }
+
+    .yomilens-resize-right {
+        right: 0;
+    }
+
+    /* Corner resize handles */
+    .yomilens-resize-top-left,
+    .yomilens-resize-top-right,
+    .yomilens-resize-bottom-left,
+    .yomilens-resize-bottom-right {
+        width: 14px;
+        height: 14px;
+    }
+
+    .yomilens-resize-top-left {
+        top: 0;
+        left: 0;
+        cursor: nwse-resize;
+    }
+
+    .yomilens-resize-top-right {
+        top: 0;
+        right: 0;
+        cursor: nesw-resize;
+    }
+
+    .yomilens-resize-bottom-left {
+        bottom: 0;
+        left: 0;
+        cursor: nesw-resize;
+    }
+
+    .yomilens-resize-bottom-right {
+        bottom: 0;
+        right: 0;
+        cursor: nwse-resize;
+    }
+`;
+
+document.head.appendChild(yomilensResizeStyle);
+
 
   // Listen for requests from iframe to lookup a sub-component
   window.addEventListener('message', function(ev){
@@ -364,6 +445,192 @@ function __styleNavBtn(btn){
     box.appendChild(ifr);
 
     document.body.appendChild(box);
+    const resizeDirections = [
+      'top',
+      'right',
+      'bottom',
+      'left',
+      'top-left',
+      'top-right',
+      'bottom-left',
+      'bottom-right'
+    ];
+
+    let activeResize = null;
+
+    resizeDirections.forEach(function(direction) {
+        const handle = document.createElement('div');
+
+        handle.className =
+            'yomilens-resize-handle yomilens-resize-' + direction;
+
+        handle.dataset.resizeDirection = direction;
+
+        // Prevent the browser from interpreting the drag as scrolling or selection.
+        handle.style.touchAction = 'none';
+        handle.style.userSelect = 'none';
+
+        handle.addEventListener('pointerdown', function(event) {
+            // Only respond to the primary mouse button.
+            if (event.button !== 0) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const rect = box.getBoundingClientRect();
+
+            activeResize = {
+                handle: handle,
+                pointerId: event.pointerId,
+                direction: direction,
+                startX: event.clientX,
+                startY: event.clientY,
+                startLeft: rect.left,
+                startTop: rect.top,
+                startWidth: rect.width,
+                startHeight: rect.height
+            };
+
+            // Keep receiving pointer events even when the pointer moves
+            // over the iframe or outside the resize handle.
+            handle.setPointerCapture(event.pointerId);
+
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = getResizeCursor(direction);
+
+            handle.addEventListener('pointermove', resizePopup);
+            handle.addEventListener('pointerup', stopResizePopup);
+            handle.addEventListener('pointercancel', stopResizePopup);
+        });
+
+        box.appendChild(handle);
+    });
+
+    function getResizeCursor(direction) {
+        if (direction === 'top-left' || direction === 'bottom-right') {
+            return 'nwse-resize';
+        }
+
+        if (direction === 'top-right' || direction === 'bottom-left') {
+            return 'nesw-resize';
+        }
+
+        if (direction === 'top' || direction === 'bottom') {
+            return 'ns-resize';
+        }
+
+        return 'ew-resize';
+    }
+
+    function resizePopup(event) {
+        if (!activeResize) {
+            return;
+        }
+
+        if (event.pointerId !== activeResize.pointerId) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const resize = activeResize;
+        const direction = resize.direction;
+
+        const deltaX = event.clientX - resize.startX;
+        const deltaY = event.clientY - resize.startY;
+
+        const minWidth = 320;
+        const minHeight = 240;
+
+        let left = resize.startLeft;
+        let top = resize.startTop;
+        let width = resize.startWidth;
+        let height = resize.startHeight;
+
+        // Resize from the left side or left corners.
+        if (direction.includes('left')) {
+            width = resize.startWidth - deltaX;
+
+            if (width >= minWidth) {
+                left = resize.startLeft + deltaX;
+            } else {
+                width = minWidth;
+                left = resize.startLeft + resize.startWidth - minWidth;
+            }
+        }
+
+        // Resize from the right side or right corners.
+        if (direction.includes('right')) {
+            width = Math.max(
+                minWidth,
+                resize.startWidth + deltaX
+            );
+        }
+
+        // Resize from the top side or top corners.
+        if (direction.includes('top')) {
+            height = resize.startHeight - deltaY;
+
+            if (height >= minHeight) {
+                top = resize.startTop + deltaY;
+            } else {
+                height = minHeight;
+                top = resize.startTop + resize.startHeight - minHeight;
+            }
+        }
+
+        // Resize from the bottom side or bottom corners.
+        if (direction.includes('bottom')) {
+            height = Math.max(
+                minHeight,
+                resize.startHeight + deltaY
+            );
+        }
+
+        box.style.left = Math.round(left) + 'px';
+        box.style.top = Math.round(top) + 'px';
+        box.style.width = Math.round(width) + 'px';
+        box.style.height = Math.round(height) + 'px';
+
+        // Keep the iframe synchronized with the resized popup.
+        ifr.width = String(Math.round(width));
+        ifr.height = String(Math.round(height));
+    }
+
+    function stopResizePopup(event) {
+        if (!activeResize) {
+            return;
+        }
+
+        if (
+            event &&
+            event.pointerId !== undefined &&
+            event.pointerId !== activeResize.pointerId
+        ) {
+            return;
+        }
+
+        const handle = activeResize.handle;
+
+        // Release pointer capture before ending the resize.
+        if (
+            activeResize.pointerId !== undefined &&
+            handle.hasPointerCapture(activeResize.pointerId)
+        ) {
+            handle.releasePointerCapture(activeResize.pointerId);
+        }
+
+        handle.removeEventListener('pointermove', resizePopup);
+        handle.removeEventListener('pointerup', stopResizePopup);
+        handle.removeEventListener('pointercancel', stopResizePopup);
+
+        activeResize = null;
+
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+    }
     enableOutsideClose();
 
     // cho add modal reload lại iframe sau khi thêm
