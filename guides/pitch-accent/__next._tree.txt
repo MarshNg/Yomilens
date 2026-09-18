@@ -1,0 +1,3 @@
+:HL["/Yomilens/_next/static/chunks/0bvvhoepjfwr6.css","style"]
+:HL["../../guide-captures/lookup-frequency-pitch.png","image"]
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"guides","param":null,"prefetchHints":0,"slots":{"children":{"name":"slug","param":{"type":"d","key":"pitch-accent","siblings":null},"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}},"staleTime":300,"buildId":"RbWD2077Iv-YxmQbi8w_A"}
