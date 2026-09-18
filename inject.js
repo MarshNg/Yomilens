@@ -203,14 +203,14 @@ document.head.appendChild(__focusCSS);
   function closeBox() {
     allPopupBoxes().forEach(function(b){ if (b) b.remove(); });
     if (outsideHandler) {
-      root.removeEventListener('mousedown', outsideHandler, true);
+      document.removeEventListener('mousedown', outsideHandler, true);
       outsideHandler = null;
     }
   }
 
   function enableOutsideClose() {
     if (outsideHandler) {
-      root.removeEventListener('mousedown', outsideHandler, true);
+      document.removeEventListener('mousedown', outsideHandler, true);
       outsideHandler = null;
     }
     // chỉ nghe trong #qa để không ảnh hưởng Deck
@@ -223,7 +223,7 @@ document.head.appendChild(__focusCSS);
         closeBox();
       }
     };
-    root.addEventListener('mousedown', outsideHandler, true);
+    document.addEventListener('mousedown', outsideHandler, true);
   }
 
   // ====== History Back/Forward ======
