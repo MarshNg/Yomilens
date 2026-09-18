@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { guides } from "../../guides-data";
 import FeatureIcon from "../feature-icon";
+import GuideMedia from "../guide-media";
 
 export function generateStaticParams() { return guides.map(guide => ({ slug: guide.id })); }
 export const dynamicParams = false;
@@ -25,6 +26,8 @@ export default async function Guide({ params }: { params: Promise<{ slug: string
     <ol className="guide-steps">{guide.steps.map((step, i) => <li key={step}><span className="step-index" aria-hidden="true">{i + 1}</span><p>{step}</p></li>)}</ol>
     {(slug === "frequency" || slug === "pitch-accent") && <p className="guide-resource"><a href="https://github.com/MarvNC/yomitan-dictionaries">Find Yomitan dictionary sources</a>. Check each source&apos;s license before downloading or redistributing.</p>}
     {slug === "custom-css" && <pre><code>{`/* Enlarge definition text */\n.reading-definitions .g {\n  font-size: 18px;\n  line-height: 1.6;\n}`}</code></pre>}
+    <h2 className="capture-heading">In Anki</h2>
+    <GuideMedia slug={slug} />
     <footer className="guide-footer"><Link href="/guides/">All guides</Link><Link href={`/guides/${next.id}/`}>{next.title}<ArrowRight size={18} /></Link></footer>
   </article>;
 }

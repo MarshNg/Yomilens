@@ -129,6 +129,13 @@ main {
 .step-index { width: 32px; height: 32px; display: grid; place-items: center; background: var(--rail); color: white; border-radius: 50%; font-size: 15px; }
 .guide-detail pre { overflow-x: auto; background: var(--soft); padding: 24px; border-radius: 8px; line-height: 1.7; }
 .guide-resource { line-height: 1.7; }
+.capture-heading { margin-top: 36px; }
+.guide-captures { display: grid; gap: 32px; margin-top: 20px; }
+.capture-focus { display: block; position: relative; overflow: hidden; width: 100%; max-width: 760px; border: 1px solid var(--line); border-radius: 8px; background: #fafafa; }
+.capture-focus img { display: block; position: absolute; max-width: none; border: 0; border-radius: 0; box-shadow: none; }
+.capture-focus:focus-visible { outline: 3px solid var(--rail); outline-offset: 4px; }
+.guide-captures figcaption { display: flex; align-items: baseline; gap: 10px; font-size: 14px; line-height: 1.6; margin-top: 12px; }
+.capture-number { flex-shrink: 0; color: var(--rail); font-weight: 700; }
 .guide-footer { display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); }
 @media (max-width: 700px) {
   .guides-page { padding: 32px 18px 56px; }
