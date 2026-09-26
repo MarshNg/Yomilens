@@ -1,6 +1,7 @@
 import GuideMenu from "./guide-menu";
 
 import { guides } from "./guides-data";
+import FeatureIcon from "./guides/feature-icon";
 import Link from "next/link";
 
 const chapters = [
@@ -265,20 +266,21 @@ export default function Home() {
         </section>
 
         <section id="feature-guides" className="section feature-guides">
-          <h2>Feature Guides</h2>
-          <p><Link href="/guides/">Browse all feature guides</Link></p>
-          <p>Pick a feature for its setup steps. Frequency, pitch accent and Custom CSS require a build that includes those features; they may not yet be available in your AnkiWeb release.</p>
-          <div className="guide-links">
-            {guides.map(({ id, title }) => <a key={id} href={`#${id}`}>{title}</a>)}
+          <div className="feature-guides-head">
+            <div>
+              <h2>Feature Guides</h2>
+              <p>Choose a feature for setup steps, examples, and screenshots.</p>
+            </div>
+            <Link href="/guides/">View all guides</Link>
           </div>
-          {guides.map(({ id, title, steps }) => (
-            <article className="feature-guide" id={id} key={id}>
-              <h3>{title}</h3>
-              <ol>{steps.map(step => <li key={step}>{step}</li>)}</ol>
-              {(id === "frequency" || id === "pitch-accent") && <p><a href="https://github.com/MarvNC/yomitan-dictionaries">Find Yomitan dictionary sources</a>. Check each source&apos;s license before downloading or redistributing.</p>}
-              {id === "custom-css" && <pre><code>{`/* Enlarge definition text */\n.reading-definitions .g {\n  font-size: 18px;\n  line-height: 1.6;\n}`}</code></pre>}
-            </article>
-          ))}
+          <div className="home-feature-tiles">
+            {guides.map(({ id, title }, index) => (
+              <Link className={`home-feature-tile tone-${index % 4}`} href={`/guides/${id}/`} key={id}>
+                <span className="home-feature-icon"><FeatureIcon id={id} /></span>
+                <span>{title}</span>
+              </Link>
+            ))}
+          </div>
         </section>
 
         <section id="troubleshooting" className="section">
